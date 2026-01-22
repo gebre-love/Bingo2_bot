@@ -1,39 +1,43 @@
 const { Telegraf, Markup } = require('telegraf');
+const express = require('express');
+const cors = require('cors');
 
-// 1. ያንተ Token እዚህ ገብቷል
-const bot = new Telegraf('8589785739:AAEBHov5zA1YLm0QQIYdh8fXgydBZvhSMUo');
+// 1. የቦት Token በ Render Environment Variable ውስጥ መደበቅ አለበት
+const bot = new Telegraf(process.env.BOT_TOKEN);
+const app = express();
 
-// 2. የተጫዋቾች መዝገብ (ለጊዜው በሜሞሪ)
+app.use(cors({ origin: 'https://gebre-love.github.io' })); // ከሌላ ቦታ መረጃ እንዳይቀበል ይከላከላል
+app.use(express.json());
+
+// ተጫዋቾች ለጊዜው እዚህ ይቀመጣሉ (በኋላ ከ MongoDB ጋር እናያይዘዋለን)
 let usersDB = {};
 
-// 3. ቦቱ ሲጀመር (/start)
-bot.start((ctx) => {
-    const userId = ctx.from.id;
-    const userName = ctx.from.first_name;
-
-    // አዲስ ተጫዋች ከሆነ የ 100 ብር ስጦታ መስጠት
-    if (!usersDB[userId]) {
-        usersDB[userId] = { balance: 100, name: userName };
+// 2. ተጫዋቹ ሲያሸንፍ በምስጢር መረጃ መቀበያ
+app.post('/secure-win', (req, res) => {
+    const { userId, winAmount, secretKey } = req.body;
+    
+    // የውሸት አሸናፊነትን ለመከላከል ሚስጥራዊ ቁልፍ
+    if (secretKey !== "BINGO_SECRET_99") {
+        return res.status(403).send("Unauthorized Access!");
     }
 
-    ctx.reply(`እንኳን ወደ Addis Bingo በደህና መጡ ${userName}! 🍀\n\nየአሁኑ ቀሪ ሂሳብዎ፡ ${usersDB[userId].balance} ETB`, 
+    if (usersDB[userId]) {
+        usersDB[userId].balance += winAmount;
+        bot.telegram.sendMessage(userId, `እንኳን ደስ አለዎት! 🎉 ${winAmount} ETB አሸንፈው ቀሪ ሂሳብዎ ${usersDB[userId].balance} ETB ሆኗል።`);
+    }
+    res.sendStatus(200);
+});
+
+bot.start((ctx) => {
+    const userId = ctx.from.id;
+    if (!usersDB[userId]) usersDB[userId] = { balance: 100 };
+    
+    ctx.replyWithMarkdown(`*እንኳን ወደ Addis Bingo በደህና መጡ!* 🍀\n\n💰 ቀሪ ሂሳብዎ፡ *${usersDB[userId].balance} ETB*`, 
     Markup.inlineKeyboard([
-        [Markup.button.webApp('🎮 Play 10', 'https://gebre-love.github.io/Bingo_game1/'), 
-         Markup.button.webApp('🎮 Play 20', 'https://gebre-love.github.io/Bingo_game1/')],
-        [Markup.button.webApp('🎮 Play 50', 'https://gebre-love.github.io/Bingo_game1/'), 
-         Markup.button.webApp('🎮 Play 100', 'https://gebre-love.github.io/Bingo_game1/')],
-        [Markup.button.callback('💰 ሂሳብ ለመፈተሽ', 'check_balance')]
+        [Markup.button.webApp('🎮 ጨዋታውን ጀምር', `https://gebre-love.github.io/Bingo_game1/?userId=${userId}`)]
     ]));
 });
 
-// 4. ሂሳብ ለመፈተሽ (Check Balance)
-bot.action('check_balance', (ctx) => {
-    const userId = ctx.from.id;
-    const bal = usersDB[userId] ? usersDB[userId].balance : 0;
-    ctx.answerCbQuery();
-    ctx.reply(`የእርስዎ ቀሪ ሂሳብ፡ ${bal} ETB ነው።`);
-});
-
-// 5. ቦቱን ማስጀመር
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Secure Server on port ${PORT}`));
 bot.launch();
-console.log("Bingo Bot is running...");
