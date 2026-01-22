@@ -1,7 +1,7 @@
 {
-  "name": "addis-bingo-bot",
+  "name": "bingo-telegram-bot",
   "version": "1.0.0",
-  "description": "",
+  "description": "Telegram Bingo Bot and Web App",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
