@@ -3,137 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Addis Bingo Premium</title>
+    <title>Addis Bingo</title>
     <style>
         :root { --primary: #1e272e; --accent: #eb4d4b; --gold: #f1c40f; --win: #27ae60; --bg: #2f3640; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; color: white; overflow: hidden; height: 100vh; display: flex; justify-content: center; }
-        .app { width: 100%; max-width: 400px; height: 100vh; display: flex; flex-direction: column; padding: 5px; box-sizing: border-box; justify-content: space-between; }
-        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 10px; }
-        .modal { background: white; border-radius: 12px; padding: 15px; width: 100%; text-align: center; color: var(--primary); box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        .btn-sel { padding: 12px; border: 1px solid #ccc; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; background: white; transition: 0.3s; }
-        .btn-sel:hover { background: var(--gold); }
-        .full-board { background: var(--primary); padding: 5px; border-radius: 8px; border: 1px solid #485460; }
-        .board-row { display: grid; grid-template-columns: 20px repeat(15, 1fr); gap: 1px; margin-bottom: 2px; }
-        .row-label { font-weight: 900; color: var(--gold); text-align: center; font-size: 12px; }
-        .b-num { background: #485460; font-size: 9px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 2px; color: #808e9b; }
-        .b-num.called { background: var(--accent); color: white; transform: scale(1.1); font-weight: bold; }
-        .caller-bar { display: flex; align-items: center; justify-content: space-around; background: #2f3542; padding: 10px; border-radius: 15px; border: 2px solid var(--gold); }
-        .ball { width: 60px; height: 60px; background: white; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--primary); box-shadow: inset -5px -5px 10px #ccc; }
-        .card-box { background: white; padding: 10px; border-radius: 12px; color: var(--primary); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        .card-head { display: grid; grid-template-columns: repeat(5, 1fr); text-align: center; font-weight: 900; font-size: 22px; color: var(--accent); padding-bottom: 5px; }
-        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
-        .cell { aspect-ratio: 1; background: #f1f2f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; cursor: pointer; border-bottom: 4px solid #ced6e0; transition: 0.2s; }
-        .cell.marked { background: var(--win) !important; color: white !important; border: none; transform: scale(0.95); }
-        .bingo-btn { width: 100%; background: linear-gradient(#eb4d4b, #c0392b); color: white; border: none; padding: 18px; border-radius: 40px; font-size: 26px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 0 #922b21; letter-spacing: 5px; }
-        .bingo-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #922b21; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; color: white; height: 100vh; display: flex; flex-direction: column; align-items: center; }
+        .app { width: 100%; max-width: 400px; padding: 10px; box-sizing: border-box; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .modal { background: white; border-radius: 15px; padding: 20px; width: 80%; text-align: center; color: black; }
+        .bet-btn { padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; font-weight: bold; }
+        .ball-display { background: #2f3542; padding: 15px; border-radius: 15px; border: 2px solid var(--gold); margin-bottom: 10px; text-align: center; }
+        .ball { width: 50px; height: 50px; background: white; color: black; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; }
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; background: white; padding: 10px; border-radius: 10px; }
+        .cell { aspect-ratio: 1; background: #eee; color: black; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 5px; cursor: pointer; }
+        .cell.marked { background: var(--win); color: white; }
+        .bingo-btn { width: 100%; margin-top: 15px; background: var(--accent); color: white; border: none; padding: 15px; border-radius: 30px; font-size: 20px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 <div class="app">
-    <div id="overlay-bet" class="overlay">
+    <div id="bet-overlay" class="overlay">
         <div class="modal">
-            <h2 style="margin-top:0">Addis Bingo 💰</h2>
-            <p>የመወራረጃ መጠን ይምረጡ</p>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
-                <button class="btn-sel" onclick="setBet(10)">10 ETB</button>
-                <button class="btn-sel" onclick="setBet(20)">20 ETB</button>
-                <button class="btn-sel" onclick="setBet(50)">50 ETB</button>
-                <button class="btn-sel" onclick="setBet(100)">100 ETB</button>
-            </div>
+            <h3>መወራረጃ ይምረጡ</h3>
+            <button class="bet-btn" onclick="start(10)">10 ETB</button>
+            <button class="bet-btn" onclick="start(20)">20 ETB</button>
         </div>
     </div>
 
-    <div class="full-board" id="main-board"></div>
-
-    <div class="caller-bar">
-        <div style="text-align:left">
-            <span style="color:#aaa; font-size:12px">ሽልማት</span><br>
-            <b id="info-win" style="font-size:20px; color:var(--gold)">0 ETB</b>
-        </div>
-        <div class="ball">
-            <span id="call-l" style="font-size:12px; font-weight:bold; color:var(--accent)">-</span>
-            <span id="call-n" style="font-size:28px; font-weight:900">-</span>
-        </div>
+    <div class="ball-display">
+        <div class="ball" id="current-ball">-</div>
+        <p>ሽልማት፡ <span id="win-amt">0</span> ETB</p>
     </div>
 
-    <div class="card-box">
-        <div class="card-head"><div>B</div><div>I</div><div>N</div><div>G</div><div>O</div></div>
-        <div class="grid" id="player-grid"></div>
-    </div>
-
-    <button class="bingo-btn" onclick="validateBingo()">BINGO!</button>
+    <div class="grid" id="card-grid"></div>
+    <button class="bingo-btn" onclick="checkBingo()">BINGO!</button>
 </div>
 
 <script>
-    let drawn = [], stake = 0, loop, myNumbers = [];
-    const RENDER_URL = "https://bingo2-bot.onrender.com"; // ያንተ Render ሊንክ
+    let drawn = [], stake = 0, myNumbers = [];
+    const RENDER_URL = "https://bingo2-bot.onrender.com";
 
-    // ቦርዱን ማዘጋጀት
-    const board = document.getElementById('main-board');
-    ['B','I','N','G','O'].forEach((l, idx) => {
-        let row = document.createElement('div'); row.className = 'board-row';
-        let label = document.createElement('div'); label.className = 'row-label'; label.innerText = l; row.appendChild(label);
-        for(let n=1; n<=15; n++) {
-            let num = (idx * 15) + n;
-            let div = document.createElement('div'); div.className = 'b-num'; div.id = 'bn-' + num; div.innerText = num; row.appendChild(div);
-        }
-        board.appendChild(row);
-    });
-
-    function setBet(amt) {
-        stake = amt; 
-        document.getElementById('overlay-bet').style.display = 'none';
-        document.getElementById('info-win').innerText = Math.floor(amt * 1.8) + " ETB";
-        generatePlayerCard();
-        loop = setInterval(drawBall, 3500); // በየ 3.5 ሰከንድ ቁጥር ይወጣል
+    function start(amt) {
+        stake = amt;
+        document.getElementById('bet-overlay').style.display = 'none';
+        document.getElementById('win-amt').innerText = Math.floor(amt * 1.8);
+        initCard();
+        setInterval(draw, 4000);
     }
 
-    function generatePlayerCard() {
-        const grid = document.getElementById('player-grid'); grid.innerHTML = '';
-        const getCol = (min, max) => {
-            let c = []; while(c.length<5){ let r=Math.floor(Math.random()*(max-min+1))+min; if(!c.includes(r)) c.push(r); }
-            return c;
-        };
-        let cols = [getCol(1,15), getCol(16,30), getCol(31,45), getCol(46,60), getCol(61,75)];
-        for(let r=0; r<5; r++){
-            for(let c=0; c<5; c++){
-                let val = cols[c][r]; let cell = document.createElement('div'); cell.className = 'cell';
-                if(r===2 && c===2) { cell.innerText = 'FREE'; cell.classList.add('marked'); }
-                else { 
-                    cell.innerText = val; cell.id = 'c-' + val; 
-                    cell.onclick = () => { if(drawn.includes(val)) cell.classList.toggle('marked'); }; 
-                }
-                grid.appendChild(cell);
-            }
+    function initCard() {
+        const grid = document.getElementById('card-grid');
+        for(let i=0; i<25; i++) {
+            let n = Math.floor(Math.random() * 75) + 1;
+            let div = document.createElement('div');
+            div.className = 'cell';
+            div.innerText = (i === 12) ? "FREE" : n;
+            if(i === 12) div.classList.add('marked');
+            div.onclick = () => { if(drawn.includes(n)) div.classList.add('marked'); };
+            grid.appendChild(div);
         }
     }
 
-    function drawBall() {
-        if(drawn.length >= 75) return clearInterval(loop);
-        let n; do { n = Math.floor(Math.random()*75)+1; } while(drawn.includes(n));
-        drawn.push(n);
-        document.getElementById('call-l').innerText = n<=15?'B':n<=30?'I':n<=45?'N':n<=60?'G':'O';
-        document.getElementById('call-n').innerText = n;
-        document.getElementById('bn-'+n).classList.add('called');
+    function draw() {
+        let n = Math.floor(Math.random() * 75) + 1;
+        if(!drawn.includes(n)) {
+            drawn.push(n);
+            document.getElementById('current-ball').innerText = n;
+        }
     }
 
-    function validateBingo() {
-        // ይህ ለሙከራ ነው፤ በሪል ጨዋታ ሁሉንም መስመሮች (አግድም፣ ቁልቁል) ያረጋግጣል
+    function checkBingo() {
         const urlParams = new URLSearchParams(window.location.search);
         const userId = urlParams.get('userId');
-
+        
         fetch(`${RENDER_URL}/secure-win`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                userId: userId, 
-                winAmount: Math.floor(stake * 1.8), 
-                secretKey: "BINGO_SECRET_99" 
-            })
-        }).then(() => {
-            alert("ቢንጎ! 🎉 ውጤቱ ለቦቱ ተልኳል።");
-            window.location.href = "https://t.me/Addis_Bingo_bot"; // ወደ ቦቱ ይመልሰዋል
-        });
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ userId, winAmount: Math.floor(stake * 1.8), secretKey: "BINGO_SECRET_99" })
+        }).then(() => alert("ቢንጎ! 🎉"));
     }
 </script>
 </body>
