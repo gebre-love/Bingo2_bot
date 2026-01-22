@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Addis Bingo - Premium</title>
+    <style>
+        :root { --primary: #1e272e; --accent: #eb4d4b; --gold: #f1c40f; --win: #27ae60; --bg: #2f3640; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; color: white; overflow: hidden; height: 100vh; display: flex; justify-content: center; }
+        .app { width: 100%; max-width: 400px; height: 100vh; display: flex; flex-direction: column; padding: 5px; box-sizing: border-box; justify-content: space-between; }
+
+        /* Modal Overlays */
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 10px; }
+        .modal { background: white; border-radius: 12px; padding: 15px; width: 100%; text-align: center; color: var(--primary); box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .cart-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; max-height: 200px; overflow-y: auto; padding: 5px; background: #eee; border-radius: 8px; }
+        .btn-sel { padding: 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; background: white; }
+        .btn-sel:hover { background: var(--gold); }
+
+        /* Board & Ball Design */
+        .full-board { background: var(--primary); padding: 5px; border-radius: 8px; border: 1px solid #485460; }
+        .board-row { display: grid; grid-template-columns: 15px repeat(15, 1fr); gap: 1px; margin-bottom: 1px; }
+        .row-label { font-weight: 900; color: var(--gold); text-align: center; font-size: 10px; }
+        .b-num { background: #485460; font-size: 8px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 1px; color: #808e9b; }
+        .b-num.called { background: var(--accent); color: white; font-weight: bold; box-shadow: 0 0 5px var(--accent); }
+
+        .caller-bar { display: flex; align-items: center; justify-content: space-around; background: #2f3542; padding: 8px; border-radius: 12px; border: 1px solid var(--gold); }
+        .ball { width: 55px; height: 55px; background: white; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--primary); box-shadow: inset -5px -5px 10px #ccc; }
+        .ball-l { font-size: 12px; font-weight: 900; color: var(--accent); }
+        .ball-n { font-size: 26px; font-weight: 900; line-height: 1; }
+
+        /* Player Card */
+        .card-box { background: white; padding: 8px; border-radius: 10px; color: var(--primary); }
+        .card-head { display: grid; grid-template-columns: repeat(5, 1fr); text-align: center; font-weight: 900; font-size: 18px; color: var(--accent); margin-bottom: 5px; }
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+        .cell { aspect-ratio: 1; background: #f1f2f6; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; cursor: pointer; border-bottom: 3px solid #ced6e0; transition: 0.2s; }
+        .cell.marked { background: var(--win) !important; color: white !important; border: none; transform: scale(0.95); }
+        .cell.star { background: #ffeaa7; color: var(--accent); font-size: 22px; }
+
+        .bingo-btn { width: 100%; background: linear-gradient(#eb4d4b, #c0392b); color: white; border: none; padding: 15px; border-radius: 35px; font-size: 24px; font-weight: 900; cursor: pointer; box-shadow: 0 5px 0 #922b21; letter-spacing: 4px; margin-bottom: 10px; }
+        .bingo-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #922b21; }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <div id="overlay-bet" class="overlay">
+        <div class="modal">
+            <h2 style="color:var(--accent)">ADDIS BINGO</h2>
+            <p>ለመጫወት መጠን ይምረጡ</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <button class="btn-sel" onclick="setBet(10)">10 ETB</button>
+                <button class="btn-sel" onclick="setBet(20)">20 ETB</button>
+                <button class="btn-sel" onclick="setBet(50)">50 ETB</button>
+                <button class="btn-sel" onclick="setBet(100)">100 ETB</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="overlay-cart" class="overlay" style="display:none;">
+        <div class="modal">
+            <h3>ካርቴላ ይምረጡ</h3>
+            <div class="cart-grid" id="cart-list"></div>
+        </div>
+    </div>
+
+    <div class="full-board" id="main-board"></div>
+
+    <div class="caller-bar">
+        <div style="font-size:12px;">ካርቴላ: <b id="info-id" style="color:var(--gold)">#--</b><br>ሽልማት: <b id="info-win" style="color:var(--win)">0</b></div>
+        <div class="ball">
+            <span class="ball-l" id="call-l">-</span>
+            <span class="ball-n" id="call-n">-</span>
+        </div>
+        <div style="font-size:11px; text-align:right;">የሚቀጥለው<br><b id="timer" style="color:var(--gold)">3</b> ሰከንድ</div>
+    </div>
+
+    <div class="card-box">
+        <div class="card-head"><div>B</div><div>I</div><div>N</div><div>G</div><div>O</div></div>
+        <div class="grid" id="player-grid"></div>
+    </div>
+
+    <button class="bingo-btn" onclick="validateBingo()">BINGO!</button>
+</div>
+
+<script>
+    let drawn = [], lastNum = null, stake = 0, cartId = 0, loop, myNumbers = [];
+    const RENDER_URL = "https://bingo2-bot.onrender.com"; // ያንተን Render ሊንክ እዚህ አረጋግጥ
+
+    // የቦርድ አሰራር
+    const board = document.getElementById('main-board');
+    ['B','I','N','G','O'].forEach((l, idx) => {
+        let row = document.createElement('div');
+        row.className = 'board-row';
+        let label = document.createElement('div');
+        label.className = 'row-label'; label.innerText = l;
+        row.appendChild(label);
+        for(let n=1; n<=15; n++) {
+            let num = (idx * 15) + n;
+            let div = document.createElement('div');
+            div.className = 'b-num'; div.id = 'bn-' + num; div.innerText = num;
+            row.appendChild(div);
+        }
+        board.appendChild(row);
+    });
+
+    function setBet(amt) {
+        stake = amt;
+        document.getElementById('overlay-bet').style.display = 'none';
+        document.getElementById('overlay-cart').style.display = 'flex';
+        const list = document.getElementById('cart-list');
+        for(let i=1; i<=50; i++) {
+            let b = document.createElement('button');
+            b.className = 'btn-sel'; b.innerText = "#"+i;
+            b.onclick = () => start(i);
+            list.appendChild(b);
+        }
+    }
+
+    function start(id) {
+        cartId = id;
+        document.getElementById('overlay-cart').style.display = 'none';
+        document.getElementById('info-id').innerText = "#"+id;
+        document.getElementById('info-win').innerText = Math.floor(stake * 1.8) + " ETB";
+        generatePlayerCard();
+        loop = setInterval(drawBall, 3500);
+    }
+
+    function generatePlayerCard() {
+        const grid = document.getElementById('player-grid');
+        grid.innerHTML = '';
+        const getCol = (min, max) => {
+            let c = []; while(c.length<5){ let r=Math.floor(Math.random()*(max-min+1))+min; if(!c.includes(r)) c.push(r); }
+            return c;
+        };
+        let cols = [getCol(1,15), getCol(16,30), getCol(31,45), getCol(46,60), getCol(61,75)];
+        for(let r=0; r<5; r++){
+            for(let c=0; c<5; c++){
+                let val = cols[c][r];
+                let cell = document.createElement('div');
+                cell.className = 'cell';
+                if(r===2 && c===2) {
+                    cell.innerText = '★'; cell.classList.add('star', 'marked');
+                } else {
+                    cell.innerText = val;
+                    cell.id = 'c-' + val;
+                    cell.onclick = () => { if(drawn.includes(val)) cell.classList.toggle('marked'); };
+                    myNumbers.push(val);
+                }
+                grid.appendChild(cell);
+            }
+        }
+    }
+
+    function drawBall() {
+        if(drawn.length >= 75) return clearInterval(loop);
+        let n; do { n = Math.floor(Math.random()*75)+1; } while(drawn.includes(n));
+        drawn.push(n);
+        lastNum = n;
+        let l = n<=15?'B':n<=30?'I':n<=45?'N':n<=60?'G':'O';
+        document.getElementById('call-l').innerText = l;
+        document.getElementById('call-n').innerText = n;
+        document.getElementById('bn-'+n).classList.add('called');
+    }
+
+    function validateBingo() {
+        const cells = document.querySelectorAll('.cell');
+        const check = (i) => cells[i].classList.contains('marked');
+        let rowW = [0,1,2,3,4].some(r => [0,1,2,3,4].every(c => check(r*5+c)));
+        let colW = [0,1,2,3,4].some(c => [0,1,2,3,4].every(r => check(r*5+c)));
+        let d1 = [0,6,12,18,24].every(i => check(i));
+        let d2 = [4,8,12,16,20].every(i => check(i));
+        let crn = [0,4,20,24].every(i => check(i));
+
+        if(rowW || colW || d1 || d2 || crn) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('userId');
+            const winAmount = Math.floor(stake * 1.8);
+
+            clearInterval(loop);
+
+            // ደህንነቱ የተጠበቀ ግንኙነት ለቦቱ መላክ
+            fetch(`${RENDER_URL}/secure-win`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: userId,
+                    winAmount: winAmount,
+                    secretKey: "BINGO_SECRET_99" // ከ bot.js ጋር አንድ መሆን አለበት
+                })
+            }).then(() => {
+                alert(`BINGO! 🎉 እንኳን ደስ አለዎት! ${winAmount} ETB አሸንፈዋል።`);
+                window.close();
+            });
+        } else {
+            alert("ቢንጎ ገና ነዎት! በትክክል ምልክት ማድረጉን ያረጋግጡ።");
+        }
+    }
+</script>
+</body>
+</html>
